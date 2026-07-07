@@ -1,0 +1,288 @@
+# KNOWN_VULNS — ground-truth vulnerability catalog
+# Purpose: answer key for benchmarking Scantonomous scan findings against this app.
+# Diff scanner output vs. this file: a hit on a `vulnerable_source` path == true positive;
+# a hit on a `secure_source` path == false positive.
+#
+# Schema per entry:
+#   id               stable slug for this vuln class
+#   category         human-readable vulnerability class
+#   cwe              primary CWE id(s)
+#   owasp            OWASP Top 10 (2021) category
+#   module           app-internal module/feature name
+#   route            HTTP path to reach it (DAST)
+#   parameter        injectable/tainted input(s) (DAST)
+#   vulnerable_source source files that ARE vulnerable (SAST true-positive targets)
+#   secure_source    hardened variant that is NOT vulnerable (false-positive test)
+#   notes            context / caveats
+
+app: bWAPP
+full_name: buggy Web Application (bWAPP)
+upstream: https://github.com/raesene/bWAPP
+fork: https://github.com/tomj12k/bWAPP
+language: PHP
+scan_surface: [SAST-php, DAST-web]
+catalog_notes: >
+  bWAPP ships ~100 individual bug pages, each a top-level *.php file under app/.
+  The app's own inventory is app/bugs.txt (also rendered by app/portal.php),
+  organized against the OWASP Top 10 2013 (A1-A10) plus an "Other bugs" and
+  "Extras" section. Because listing all ~100 pages 1:1 is noisy, this catalog
+  GROUPS them into ~26 vulnerability-class entries; each entry lists the concrete
+  bWAPP files that implement that class (verified present in app/). Every bug page
+  also honors a runtime security-level selector (low/medium/high) rather than
+  shipping separate hardened files, so secure_source is empty. Paths are relative
+  to repo root.
+
+vulns:
+  - id: bwapp-html-injection
+    category: HTML Injection (Reflected & Stored)
+    cwe: [CWE-79]
+    owasp: A03:2021-Injection
+    route: /htmli_get.php
+    parameter: [firstname, lastname, blog]
+    vulnerable_source: [app/htmli_get.php, app/htmli_post.php, app/htmli_current_url.php, app/htmli_stored.php, app/iframei.php]
+    secure_source: []
+
+  - id: bwapp-sqli
+    category: SQL Injection (GET/POST/AJAX/CAPTCHA/Login/Stored/Blind/SQLite/SOAP)
+    cwe: [CWE-89]
+    owasp: A03:2021-Injection
+    route: /sqli_1.php
+    parameter: [title, movie, login, password, search]
+    vulnerable_source: [app/sqli_1.php, app/sqli_2.php, app/sqli_3.php, app/sqli_4.php, app/sqli_5.php, app/sqli_6.php, app/sqli_7.php, app/sqli_8-1.php, app/sqli_9.php, app/sqli_10-1.php, app/sqli_11.php, app/sqli_12.php, app/sqli_13.php, app/sqli_14.php, app/sqli_15.php, app/sqli_16.php, app/sqli_17.php, app/sqli_drupal.php]
+    secure_source: []
+    notes: ~18 SQLi variants in bugs.txt including error-based, blind boolean/time, and SQLite.
+
+  - id: bwapp-command-injection
+    category: OS Command Injection (incl. Blind)
+    cwe: [CWE-78]
+    owasp: A03:2021-Injection
+    route: /commandi.php
+    parameter: [target]
+    vulnerable_source: [app/commandi.php, app/commandi_blind.php]
+    secure_source: []
+
+  - id: bwapp-php-code-injection
+    category: PHP Code Injection
+    cwe: [CWE-94]
+    owasp: A03:2021-Injection
+    route: /phpi.php
+    parameter: [message]
+    vulnerable_source: [app/phpi.php, app/php_eval.php]
+    secure_source: []
+
+  - id: bwapp-ssi-injection
+    category: Server-Side Includes (SSI) Injection
+    cwe: [CWE-97]
+    owasp: A03:2021-Injection
+    route: /ssii.php
+    parameter: [firstname, lastname]
+    vulnerable_source: [app/ssii.php]
+    secure_source: []
+
+  - id: bwapp-ldap-injection
+    category: LDAP Injection
+    cwe: [CWE-90]
+    owasp: A03:2021-Injection
+    route: /ldapi.php
+    parameter: [login, password]
+    vulnerable_source: [app/ldapi.php, app/ldap_connect.php]
+    secure_source: []
+
+  - id: bwapp-mail-header-injection
+    category: Mail Header Injection (SMTP)
+    cwe: [CWE-93]
+    owasp: A03:2021-Injection
+    route: /maili.php
+    parameter: [email, subject, message]
+    vulnerable_source: [app/maili.php]
+    secure_source: []
+
+  - id: bwapp-xml-xpath-injection
+    category: XML / XPath Injection
+    cwe: [CWE-643, CWE-91]
+    owasp: A03:2021-Injection
+    route: /xmli_1.php
+    parameter: [genre, login, password]
+    vulnerable_source: [app/xmli_1.php, app/xmli_2.php]
+    secure_source: []
+
+  - id: bwapp-broken-authentication
+    category: Broken Authentication (CAPTCHA bypass, weak/forgotten passwords, insecure login, logout mgmt)
+    cwe: [CWE-287, CWE-521]
+    owasp: A07:2021-Identification and Authentication Failures
+    route: /ba_insecure_login.php
+    parameter: [login, password]
+    vulnerable_source: [app/ba_captcha_bypass.php, app/ba_forgotten.php, app/ba_insecure_login.php, app/ba_insecure_login_1.php, app/ba_insecure_login_2.php, app/ba_insecure_login_3.php, app/ba_logout.php, app/ba_pwd_attacks.php, app/ba_weak_pwd.php]
+    secure_source: []
+
+  - id: bwapp-session-management
+    category: Session Management Flaws (cookies, session ID in URL, admin portals)
+    cwe: [CWE-384, CWE-614, CWE-1004]
+    owasp: A07:2021-Identification and Authentication Failures
+    route: /smgmt_sessionid_url.php
+    parameter: []
+    vulnerable_source: [app/smgmt_admin_portal.php, app/smgmt_cookies_httponly.php, app/smgmt_cookies_secure.php, app/smgmt_sessionid_url.php, app/smgmt_strong_sessions.php]
+    secure_source: []
+
+  - id: bwapp-xss-reflected
+    category: Reflected XSS (GET/POST/JSON/AJAX/headers/eval)
+    cwe: [CWE-79]
+    owasp: A03:2021-Injection
+    route: /xss_get.php
+    parameter: [firstname, lastname, login, date]
+    vulnerable_source: [app/xss_get.php, app/xss_post.php, app/xss_json.php, app/xss_ajax_1-1.php, app/xss_ajax_2-1.php, app/xss_back_button.php, app/xss_custom_header.php, app/xss_eval.php, app/xss_href-1.php, app/xss_login.php, app/xss_php_self.php, app/xss_referer.php, app/xss_user_agent.php]
+    secure_source: []
+
+  - id: bwapp-xss-stored
+    category: Stored XSS (Blog, Change Secret, Cookies, User-Agent)
+    cwe: [CWE-79]
+    owasp: A03:2021-Injection
+    route: /xss_stored_1.php
+    parameter: [entry, secret]
+    vulnerable_source: [app/xss_stored_1.php, app/xss_stored_2.php, app/xss_stored_3.php, app/xss_stored_4.php]
+    secure_source: []
+
+  - id: bwapp-idor
+    category: Insecure Direct Object References
+    cwe: [CWE-639]
+    owasp: A01:2021-Broken Access Control
+    route: /insecure_direct_object_ref_1.php
+    parameter: [login, ticket_quantity]
+    vulnerable_source: [app/insecure_direct_object_ref_1.php, app/insecure_direct_object_ref_2.php, app/insecure_direct_object_ref_3.php]
+    secure_source: []
+
+  - id: bwapp-security-misconfiguration
+    category: Security Misconfiguration (CORS, XST, cross-domain policy, DoS, insecure services)
+    cwe: [CWE-16, CWE-942, CWE-548]
+    owasp: A05:2021-Security Misconfiguration
+    route: /sm_cors.php
+    parameter: []
+    vulnerable_source: [app/sm_cors.php, app/sm_xst.php, app/sm_cross_domain_policy.php, app/sm_dos_1.php, app/sm_dos_2.php, app/sm_dos_3.php, app/sm_dos_4.php, app/sm_obu_files.php, app/sm_robots.php]
+    secure_source: []
+    notes: bugs.txt A5 also includes host/network-level items (Samba, FTP, SNMP, WebDAV, MITM, priv-esc) that are not implemented as scannable PHP source.
+
+  - id: bwapp-sensitive-data-exposure
+    category: Sensitive Data Exposure / Insecure Crypto Storage & Transport
+    cwe: [CWE-311, CWE-327, CWE-319]
+    owasp: A02:2021-Cryptographic Failures
+    route: /insecure_crypt_storage_1.php
+    parameter: [secret]
+    vulnerable_source: [app/insecure_crypt_storage_1.php, app/insecure_crypt_storage_2.php, app/insecure_crypt_storage_3.php, app/insuff_transp_layer_protect_1.php, app/insuff_transp_layer_protect_2.php, app/insuff_transp_layer_protect_3.php, app/insuff_transp_layer_protect_4.php, app/heartbleed.php]
+    secure_source: []
+
+  - id: bwapp-directory-traversal
+    category: Directory / Path Traversal
+    cwe: [CWE-22]
+    owasp: A01:2021-Broken Access Control
+    route: /directory_traversal_1.php
+    parameter: [page, directory]
+    vulnerable_source: [app/directory_traversal_1.php, app/directory_traversal_2.php]
+    secure_source: []
+
+  - id: bwapp-file-inclusion
+    category: Remote & Local File Inclusion (RFI/LFI)
+    cwe: [CWE-98]
+    owasp: A03:2021-Injection
+    route: /rlfi.php
+    parameter: [language, page]
+    vulnerable_source: [app/rlfi.php, app/lfi_sqlitemanager.php]
+    secure_source: []
+
+  - id: bwapp-ssrf
+    category: Server-Side Request Forgery
+    cwe: [CWE-918]
+    owasp: A10:2021-Server-Side Request Forgery
+    route: /ssrf.php
+    parameter: [url]
+    vulnerable_source: [app/ssrf.php]
+    secure_source: []
+
+  - id: bwapp-xxe
+    category: XML External Entity (XXE)
+    cwe: [CWE-611]
+    owasp: A05:2021-Security Misconfiguration
+    route: /xxe-1.php
+    parameter: [xml, login, secret]
+    vulnerable_source: [app/xxe-1.php, app/xxe-2.php]
+    secure_source: []
+
+  - id: bwapp-host-header-attack
+    category: Host Header Attack (Cache / Reset Poisoning)
+    cwe: [CWE-644]
+    owasp: A05:2021-Security Misconfiguration
+    route: /hostheader_1.php
+    parameter: [Host]
+    vulnerable_source: [app/hostheader_1.php, app/hostheader_2.php]
+    secure_source: []
+
+  - id: bwapp-csrf
+    category: Cross-Site Request Forgery
+    cwe: [CWE-352]
+    owasp: A01:2021-Broken Access Control
+    route: /csrf_1.php
+    parameter: [password_new, password_conf, account, amount]
+    vulnerable_source: [app/csrf_1.php, app/csrf_2.php, app/csrf_3.php]
+    secure_source: []
+
+  - id: bwapp-known-vulnerable-components
+    category: Using Known Vulnerable Components (Drupageddon, Heartbleed, Shellshock, PHP-CGI, SQLiteManager, buffer overflow)
+    cwe: [CWE-1104, CWE-1035]
+    owasp: A06:2021-Vulnerable and Outdated Components
+    route: /sqli_drupal.php
+    parameter: [name]
+    vulnerable_source: [app/bof_1.php, app/bof_2.php, app/sqli_drupal.php, app/heartbleed.php, app/php_cgi.php, app/shellshock.php, app/lfi_sqlitemanager.php, app/phpi_sqlitemanager.php, app/xss_sqlitemanager.php]
+    secure_source: []
+
+  - id: bwapp-open-redirect
+    category: Unvalidated Redirects & Forwards
+    cwe: [CWE-601]
+    owasp: A01:2021-Broken Access Control
+    route: /unvalidated_redir_fwd_1.php
+    parameter: [url, forward]
+    vulnerable_source: [app/unvalidated_redir_fwd_1.php, app/unvalidated_redir_fwd_2.php]
+    secure_source: []
+
+  - id: bwapp-clickjacking
+    category: Clickjacking / Insecure iFrame
+    cwe: [CWE-1021]
+    owasp: A05:2021-Security Misconfiguration
+    route: /clickjacking.php
+    parameter: []
+    vulnerable_source: [app/clickjacking.php, app/insecure_iframe.php]
+    secure_source: []
+
+  - id: bwapp-client-side-validation
+    category: Client-Side Validation Bypass
+    cwe: [CWE-602]
+    owasp: A04:2021-Insecure Design
+    route: /cs_validation.php
+    parameter: [password]
+    vulnerable_source: [app/cs_validation.php]
+    secure_source: []
+
+  - id: bwapp-http-attacks
+    category: HTTP Parameter Pollution / Response Splitting / Verb Tampering
+    cwe: [CWE-235, CWE-113, CWE-650]
+    owasp: A03:2021-Injection
+    route: /hpp-1.php
+    parameter: [movie, name]
+    vulnerable_source: [app/hpp-1.php, app/hpp-2.php, app/hpp-3.php, app/http_response_splitting.php, app/http_verb_tampering.php]
+    secure_source: []
+
+  - id: bwapp-information-disclosure
+    category: Information Disclosure (PHP version, headers, robots, favicon)
+    cwe: [CWE-200]
+    owasp: A05:2021-Security Misconfiguration
+    route: /information_disclosure_1.php
+    parameter: []
+    vulnerable_source: [app/information_disclosure_1.php, app/information_disclosure_2.php, app/information_disclosure_3.php, app/information_disclosure_4.php]
+    secure_source: []
+
+  - id: bwapp-unrestricted-file-upload
+    category: Unrestricted File Upload
+    cwe: [CWE-434]
+    owasp: A05:2021-Security Misconfiguration
+    route: /unrestricted_file_upload.php
+    parameter: [file]
+    vulnerable_source: [app/unrestricted_file_upload.php]
+    secure_source: []
